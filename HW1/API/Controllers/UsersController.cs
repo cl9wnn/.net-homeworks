@@ -5,14 +5,21 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
-[Route("api/[controller]")]
+/// <summary>
+/// Управление пользователями
+/// </summary>
+/// <param name="passwordHasher">Сервис для хеширования паролей</param>
+/// <param name="users">Список пользователей в памяти</param>
 [ApiController]
+[Produces("application/json")]
+[Route("api/[controller]")]
 public class UsersController(IPasswordHasher<User> passwordHasher, List<User> users) : ControllerBase
 {
     /// <summary>
     /// Получить список всех пользователей.
     /// </summary>
     /// <returns>Список пользователей в виде коллекции <see cref="UserResponse"/></returns>
+    /// <response code="200"/>Возвращает список пользователей<response/>
     [HttpGet]
     [ProducesResponseType(typeof(IEnumerable<UserResponse>), StatusCodes.Status200OK)]
     public IActionResult GetAll()
@@ -28,6 +35,8 @@ public class UsersController(IPasswordHasher<User> passwordHasher, List<User> us
     /// <param name="from">Начальная дата</param>
     /// <param name="to">Конечная дата</param>
     /// <returns>Список пользователей в виде коллекции <see cref="UserResponse"/></returns>
+    /// <response code="200">Возвращает список пользователей</response>
+    /// <response code="400">Начальная дата не может быть больше конечной</response>
     [HttpGet("filter")]
     [ProducesResponseType(typeof(IEnumerable<UserResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
@@ -50,10 +59,9 @@ public class UsersController(IPasswordHasher<User> passwordHasher, List<User> us
     /// Получить пользователя по идентификатору.
     /// </summary>
     /// <param name="id">Уникальный идентификатор пользователя</param>
-    /// <returns>
-    /// Объект <see cref="UserResponse"/> если пользователь найден,
-    /// либо сообщение об ошибке, если не найден.
-    /// </returns>
+    /// <returns>Объект <see cref="UserResponse"/></returns>
+    /// <response code="200">Пользователь найден</response>
+    /// <response code="404">Пользователь не найден</response>
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(UserResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
@@ -70,10 +78,9 @@ public class UsersController(IPasswordHasher<User> passwordHasher, List<User> us
     /// Зарегистрировать пользователя.
     /// </summary>
     /// <param name="request">Модель запроса для создания пользователя <see cref="CreateUserRequest"/></param>
-    /// <returns>
-    /// Созданный пользователь <see cref="UserResponse"/> с кодом 201;
-    /// либо ошибка 400, если имя пользователя уже существует.
-    /// </returns>
+    /// <returns>Созданный пользователь <see cref="UserResponse"/></returns>
+    /// <response code="201">Пользователь успешно создан</response>
+    /// <response code="400">Пользователь с таким username уже существует</response>
     [HttpPost]
     [ProducesResponseType(typeof(UserResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
@@ -99,10 +106,8 @@ public class UsersController(IPasswordHasher<User> passwordHasher, List<User> us
 
         users.Add(user);
 
-        return Created(
-            $"api/users/{user.Id}",
-            new UserResponse(user.Id, user.Username, user.Email)
-        );
+        return CreatedAtAction(nameof(GetById), new { id = user.Id }, 
+                new UserResponse(user.Id, user.Username, user.Email));
     }
 
     /// <summary>
@@ -110,11 +115,10 @@ public class UsersController(IPasswordHasher<User> passwordHasher, List<User> us
     /// </summary>
     /// <param name="id">Уникальный идентификатор пользователя</param>
     /// <param name="request">Модель запроса для обновления <see cref="UpdateUserRequest"/></param>
-    /// <returns>
-    /// Обновлённый объект <see cref="UserResponse"/> если успешно;
-    /// Ошибка 404, если пользователь не найден;
-    /// Ошибка 400, если имя пользователя уже занято.
-    /// </returns>
+    /// <returns>Обновлённый объект <see cref="UserResponse"/></returns>
+    /// <response code="200">Имя пользователя успешно обновлено</response>
+    /// <response code="400">Имя пользователя уже занято</response>
+    /// <response code="404">Пользователь не найден</response>
     [HttpPatch("{id:guid}")]
     [ProducesResponseType(typeof(UserResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
@@ -132,7 +136,7 @@ public class UsersController(IPasswordHasher<User> passwordHasher, List<User> us
 
         if (usernameExists)
         {
-            return BadRequest(new ErrorResponse("Username уже занят"));
+            return BadRequest(new ErrorResponse("Имя пользователя уже занято"));
         }
 
         user.Username = request.Username;
@@ -145,10 +149,8 @@ public class UsersController(IPasswordHasher<User> passwordHasher, List<User> us
     /// Удалить пользователя
     /// </summary>
     /// <param name="id">Уникальный идентификатор пользователя</param>
-    /// <returns>
-    /// Код 204, если пользователь успешно удалён;
-    /// Ошибка 404, если пользователь не найден.
-    /// </returns>
+    /// <response code="204">Пользователь успешно удалён</response>
+    /// <response code="404">Пользователь не найден</response>
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]

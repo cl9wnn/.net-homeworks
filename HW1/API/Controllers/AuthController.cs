@@ -5,8 +5,14 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
-[Route("api/[controller]")]
+/// <summary>
+/// Управление аутентификацией пользователей
+/// </summary>
+/// <param name="passwordHasher">Сервис для хеширования паролей</param>
+/// <param name="users">Список пользователей в памяти</param>
 [ApiController]
+[Produces("application/json")]
+[Route("api/[controller]")]
 public class AuthController(IPasswordHasher<User> passwordHasher, List<User> users): ControllerBase
 {
     /// <summary>
@@ -14,6 +20,9 @@ public class AuthController(IPasswordHasher<User> passwordHasher, List<User> use
     /// </summary>
     /// <param name="request">Модель запроса для авторизации пользователя</param>
     /// <returns>JWT токен</returns>
+    /// <response code="200">Возвращает JWT-токен</response>
+    /// <response code="404">Пользователь не найден</response>
+    /// <response code="401">Пользователь не аутентифицирован</response>
     [HttpPost("login")]
     [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
