@@ -7,7 +7,7 @@ namespace API.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class UsersController(IPasswordHasher<User> passwordHasher, List<User> users): ControllerBase
+public class UsersController(IPasswordHasher<User> passwordHasher, List<User> users) : ControllerBase
 {
     /// <summary>
     /// Получить список всех пользователей.
@@ -18,6 +18,30 @@ public class UsersController(IPasswordHasher<User> passwordHasher, List<User> us
     public IActionResult GetAll()
     {
         var result = users.Select(u => new UserResponse(u.Id, u.Username, u.Email));
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Получить пользователей за указанный период времени.
+    /// </summary>
+    /// <param name="from">Начальная дата</param>
+    /// <param name="to">Конечная дата</param>
+    /// <returns>Список пользователей в виде коллекции <see cref="UserResponse"/></returns>
+    [HttpGet("filter")]
+    [ProducesResponseType(typeof(IEnumerable<UserResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    public IActionResult GetAllByDateRange([FromQuery] DateTime from, [FromQuery] DateTime to)
+    {
+        if (from > to)
+        {
+            return BadRequest(new ErrorResponse("Начальная дата не может быть больше конечной"));
+        }
+
+        var result = users
+            .Where(u => u.CreatedDate >= from && u.CreatedDate <= to ||
+                        u.UpdatedDate >= from && u.UpdatedDate <= to)
+            .Select(u => new UserResponse(u.Id, u.Username, u.Email));
 
         return Ok(result);
     }
@@ -67,6 +91,8 @@ public class UsersController(IPasswordHasher<User> passwordHasher, List<User> us
             Id = Guid.NewGuid(),
             Username = request.Username,
             Email = request.Email,
+            CreatedDate = DateTime.UtcNow,
+            UpdatedDate = DateTime.UtcNow,
         };
 
         user.Password = passwordHasher.HashPassword(user, request.Password);
@@ -110,10 +136,11 @@ public class UsersController(IPasswordHasher<User> passwordHasher, List<User> us
         }
 
         user.Username = request.Username;
+        user.UpdatedDate = DateTime.UtcNow;
 
         return Ok(new UserResponse(user.Id, user.Username, user.Email));
     }
-    
+
     /// <summary>
     /// Удалить пользователя
     /// </summary>
@@ -123,8 +150,8 @@ public class UsersController(IPasswordHasher<User> passwordHasher, List<User> us
     /// Ошибка 404, если пользователь не найден.
     /// </returns>
     [HttpDelete("{id:guid}")]
-    [ProducesResponseType( StatusCodes.Status204NoContent)]
-    [ProducesResponseType(typeof(ErrorResponse),  StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public IActionResult Delete(Guid id)
     {
         var user = users.FirstOrDefault(u => u.Id == id);
