@@ -1,5 +1,5 @@
-using API.Entities;
 using API.Models;
+using Core.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,12 +8,11 @@ namespace API.Controllers;
 /// <summary>
 /// Управление аутентификацией пользователей
 /// </summary>
-/// <param name="passwordHasher">Сервис для хеширования паролей</param>
 /// <param name="users">Список пользователей в памяти</param>
 [ApiController]
 [Produces("application/json")]
 [Route("api/[controller]")]
-public class AuthController(IPasswordHasher<User> passwordHasher, List<User> users): ControllerBase
+public class AuthController(List<User> users): ControllerBase
 {
     /// <summary>
     /// Авторизовать пользователя по паролю
@@ -36,7 +35,7 @@ public class AuthController(IPasswordHasher<User> passwordHasher, List<User> use
             return NotFound(new ErrorResponse("Пользователь не найден!"));
         }
 
-        var verifyResult = passwordHasher.VerifyHashedPassword(user, user.Password, request.Password);
+        var verifyResult = new PasswordHasher<User>().VerifyHashedPassword(user, user.Password, request.Password);
 
         if (verifyResult == PasswordVerificationResult.Failed)
         {

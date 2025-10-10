@@ -1,8 +1,12 @@
 using System.Reflection;
 using API.Models;
 using API.Validation;
+using Application.Abstractions;
+using Application.Services;
+using Core.Abstractions;
 using FluentValidation;
 using FluentValidation.AspNetCore;
+using Infrastructure.Database.Repositories;
 
 namespace API.Extensions;
 
@@ -18,6 +22,14 @@ public static class ServiceCollectionExtensions
             var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
             c.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
         });
+        
+        return services;
+    }
+
+    public static IServiceCollection AddServices(this IServiceCollection services)
+    {
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IUserService, UserService>();
         
         return services;
     }

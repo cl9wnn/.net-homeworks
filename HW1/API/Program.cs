@@ -1,22 +1,20 @@
-using API.Entities;
 using API.Extensions;
-using Microsoft.AspNetCore.Identity;
+using Infrastructure.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddSingleton<List<User>>();
-builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddControllers();
+builder.Services.AddServices();
 builder.Services.AddSwaggerDocumentation(builder.Environment);
 builder.Services.AddValidation();
+builder.Services.AddPostgreSqlDb(builder.Configuration);
 
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json",
-        $"{builder.Environment.ApplicationName} v1"));
+    app.UseSwaggerDocumentation(builder.Environment);
+    app.Services.ApplyMigrations();
 }
 
 app.MapControllers();

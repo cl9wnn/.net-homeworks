@@ -1,6 +1,6 @@
-using API.Entities;
 using API.Models;
-using Microsoft.AspNetCore.Identity;
+using Application.Abstractions;
+using Application.Dtos;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
@@ -8,12 +8,11 @@ namespace API.Controllers;
 /// <summary>
 /// Управление пользователями
 /// </summary>
-/// <param name="passwordHasher">Сервис для хеширования паролей</param>
-/// <param name="users">Список пользователей в памяти</param>
+/// <param name="userService">Сервис для работы с пользователями</param>
 [ApiController]
 [Produces("application/json")]
 [Route("api/[controller]")]
-public class UsersController(IPasswordHasher<User> passwordHasher, List<User> users) : ControllerBase
+public class UsersController(IUserService userService) : ControllerBase
 {
     /// <summary>
     /// Получить список всех пользователей.
@@ -22,11 +21,11 @@ public class UsersController(IPasswordHasher<User> passwordHasher, List<User> us
     /// <response code="200"/>Возвращает список пользователей<response/>
     [HttpGet]
     [ProducesResponseType(typeof(IEnumerable<UserResponse>), StatusCodes.Status200OK)]
-    public IActionResult GetAll()
+    public async Task<IActionResult> GetAllAsync()
     {
-        var result = users.Select(u => new UserResponse(u.Id, u.Username, u.Email));
+        var users = await userService.GetAllAsync();
 
-        return Ok(result);
+        return Ok(users.Select(u => new UserResponse(u.Id, u.Username, u.Email)));
     }
 
     /// <summary>
@@ -40,19 +39,16 @@ public class UsersController(IPasswordHasher<User> passwordHasher, List<User> us
     [HttpGet("filter")]
     [ProducesResponseType(typeof(IEnumerable<UserResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
-    public IActionResult GetAllByDateRange([FromQuery] DateTime from, [FromQuery] DateTime to)
+    public async Task<IActionResult> GetAllByDateRangeAsync([FromQuery] DateTime from, [FromQuery] DateTime to)
     {
         if (from > to)
         {
             return BadRequest(new ErrorResponse("Начальная дата не может быть больше конечной"));
         }
 
-        var result = users
-            .Where(u => u.CreatedDate >= from && u.CreatedDate <= to ||
-                        u.UpdatedDate >= from && u.UpdatedDate <= to)
-            .Select(u => new UserResponse(u.Id, u.Username, u.Email));
+        var users = await userService.GetAllByDateRangeAsync(from, to);
 
-        return Ok(result);
+        return Ok(users.Select(u => new UserResponse(u.Id, u.Username, u.Email)));
     }
 
     /// <summary>
@@ -65,9 +61,9 @@ public class UsersController(IPasswordHasher<User> passwordHasher, List<User> us
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(UserResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
-    public IActionResult GetById(Guid id)
+    public async Task<IActionResult> GetByIdAsync(Guid id)
     {
-        var user = users.FirstOrDefault(u => u.Id == id);
+        var user = await userService.GetAsync(id);
 
         return user == null
             ? NotFound(new ErrorResponse("Пользователь не найден!"))
@@ -84,30 +80,24 @@ public class UsersController(IPasswordHasher<User> passwordHasher, List<User> us
     [HttpPost]
     [ProducesResponseType(typeof(UserResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
-    public IActionResult Register(CreateUserRequest request)
+    public async Task<IActionResult> RegisterAsync(CreateUserRequest request)
     {
-        var userExists = users.Any(u => u.Username == request.Username);
-
-        if (userExists)
+        var userDto = new UserDto
         {
-            return BadRequest(new ErrorResponse("Пользователь с таким username уже существует"));
-        }
-
-        var user = new User
-        {
-            Id = Guid.NewGuid(),
             Username = request.Username,
             Email = request.Email,
-            CreatedDate = DateTime.UtcNow,
-            UpdatedDate = DateTime.UtcNow,
+            Password = request.Password
         };
 
-        user.Password = passwordHasher.HashPassword(user, request.Password);
+        var createdUser = await userService.AddAsync(userDto);
 
-        users.Add(user);
+        if (createdUser == null)
+        {
+            return BadRequest("Пользователь с таким username уже существует");
+        }
 
-        return CreatedAtAction(nameof(GetById), new { id = user.Id }, 
-                new UserResponse(user.Id, user.Username, user.Email));
+        return CreatedAtAction(nameof(GetByIdAsync), new { id = createdUser.Id },
+            new UserResponse(createdUser.Id, createdUser.Username, createdUser.Email));
     }
 
     /// <summary>
@@ -123,26 +113,29 @@ public class UsersController(IPasswordHasher<User> passwordHasher, List<User> us
     [ProducesResponseType(typeof(UserResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
-    public IActionResult UpdateUsername(Guid id, UpdateUserRequest request)
+    public async Task<IActionResult> UpdateUsernameAsync(Guid id, UpdateUserRequest request)
     {
-        var user = users.FirstOrDefault(u => u.Id == id);
+        var user = await userService.GetAsync(id);
 
         if (user == null)
         {
             return NotFound(new ErrorResponse("Пользователь не найден!"));
         }
 
-        var usernameExists = users.Any(u => u.Username == request.Username && u.Id != id);
+        var updatedUserDto = new UserDto
+        {
+            Id = user.Id,
+            Username = request.Username,
+        };
 
-        if (usernameExists)
+        var updatedUser = await userService.UpdateAsync(updatedUserDto);
+
+        if (updatedUser == null)
         {
             return BadRequest(new ErrorResponse("Имя пользователя уже занято"));
         }
 
-        user.Username = request.Username;
-        user.UpdatedDate = DateTime.UtcNow;
-
-        return Ok(new UserResponse(user.Id, user.Username, user.Email));
+        return Ok(new UserResponse(updatedUser.Id, updatedUser.Username, updatedUser.Email));
     }
 
     /// <summary>
@@ -154,17 +147,10 @@ public class UsersController(IPasswordHasher<User> passwordHasher, List<User> us
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
-    public IActionResult Delete(Guid id)
+    public async Task<IActionResult> DeleteAsync(Guid id)
     {
-        var user = users.FirstOrDefault(u => u.Id == id);
+        var isDeleted = await userService.DeleteAsync(id);
 
-        if (user == null)
-        {
-            return NotFound(new ErrorResponse("Пользователь не найден!"));
-        }
-
-        users.Remove(user);
-
-        return NoContent();
+        return isDeleted ? NoContent() : NotFound("Пользователь не найден");
     }
 }
