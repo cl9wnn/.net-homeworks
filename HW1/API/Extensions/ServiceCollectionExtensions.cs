@@ -2,11 +2,14 @@ using System.Reflection;
 using API.Models;
 using API.Validation;
 using Application.Abstractions;
+using Application.Mappings;
 using Application.Services;
 using Core.Abstractions;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Infrastructure.Database.Repositories;
+using Mapster;
+using MapsterMapper;
 
 namespace API.Extensions;
 
@@ -42,6 +45,16 @@ public static class ServiceCollectionExtensions
 
         services.AddFluentValidationAutoValidation();
 
+        return services;
+    }
+
+    public static IServiceCollection AddMappings(this IServiceCollection services)
+    {
+        var config = TypeAdapterConfig.GlobalSettings;
+        config.Scan(typeof(UserMappingConfig).Assembly);
+        services.AddSingleton(config);
+        services.AddScoped<IMapper, ServiceMapper>();
+        
         return services;
     }
 }

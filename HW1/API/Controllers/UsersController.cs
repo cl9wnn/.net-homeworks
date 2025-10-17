@@ -69,7 +69,7 @@ public class UsersController(IUserService userService) : ControllerBase
             ? NotFound(new ErrorResponse("Пользователь не найден!"))
             : Ok(new UserResponse(user.Id, user.Username, user.Email));
     }
-
+    
     /// <summary>
     /// Зарегистрировать пользователя.
     /// </summary>
@@ -96,8 +96,9 @@ public class UsersController(IUserService userService) : ControllerBase
             return BadRequest("Пользователь с таким username уже существует");
         }
 
-        return CreatedAtAction(nameof(GetByIdAsync), new { id = createdUser.Id },
-            new UserResponse(createdUser.Id, createdUser.Username, createdUser.Email));
+        return Created(
+            uri: $"/api/users/{createdUser.Id}", 
+            value: new UserResponse(createdUser.Id, createdUser.Username, createdUser.Email));
     }
 
     /// <summary>

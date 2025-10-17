@@ -8,6 +8,7 @@ builder.Services.AddServices();
 builder.Services.AddSwaggerDocumentation(builder.Environment);
 builder.Services.AddValidation();
 builder.Services.AddPostgreSqlDb(builder.Configuration);
+builder.Services.AddMappings();
 
 var app = builder.Build();
 
