@@ -14,7 +14,9 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__PostgreSqlDbConnection=Host=db;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
-
+    volumes:
+      - "C:/user_report:/app/user_report"
+      
   db:
     container_name: postgres
     image: postgres:16

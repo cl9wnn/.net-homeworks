@@ -1,4 +1,7 @@
 using API.Extensions;
+using Application.Abstractions;
+using Core.Entities;
+using Infrastructure.Excel;
 using Infrastructure.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,6 +12,10 @@ builder.Services.AddSwaggerDocumentation(builder.Environment);
 builder.Services.AddValidation();
 builder.Services.AddPostgreSqlDb(builder.Configuration);
 builder.Services.AddMappings();
+builder.Services.AddExcelExporter<IExcelExportService<User>, UserExcelExportService, User>(
+    builder.Configuration.GetSection("ExportSettings"));
+builder.Services.AddQuartz(builder.Configuration.GetSection("Quartz:ExcelExportJob:CronSchedule"));
+
 
 var app = builder.Build();
 
