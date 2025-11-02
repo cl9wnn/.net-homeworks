@@ -15,7 +15,7 @@ builder.Services.AddMappings();
 builder.Services.AddExcelExporter<IExcelExportService<User>, UserExcelExportService, User>(
     builder.Configuration.GetSection("ExportSettings"));
 builder.Services.AddQuartz(builder.Configuration.GetSection("Quartz:ExcelExportJob:CronSchedule"));
-
+builder.ConfigureSerilog();
 
 var app = builder.Build();
 
