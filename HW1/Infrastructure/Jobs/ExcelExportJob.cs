@@ -36,6 +36,5 @@ public class ExcelExportJob(
             logger.LogError(ex, "An error occured during excel export");
             throw;
         }
-       
     }
 }
