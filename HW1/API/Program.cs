@@ -26,6 +26,7 @@ if (app.Environment.IsDevelopment())
     app.Services.ApplyMigrations();
 }
 
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseMiddleware<RequestLoggingMiddleware>();
 
 app.MapControllers();

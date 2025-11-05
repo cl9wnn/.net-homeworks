@@ -9,34 +9,29 @@ public class RequestLoggingMiddleware(RequestDelegate next, ILogger<RequestLoggi
     {
         var stopwatch = Stopwatch.StartNew();
 
-        try
-        {
-            await next(context);
-        }
-        finally
-        {
-            stopwatch.Stop();
+        await next(context);
 
-            var uaParser = Parser.GetDefault();
-            var clientInfo = uaParser.Parse(context.Request.Headers.UserAgent);
-            var deviceType = clientInfo.Device.IsSpider
-                ? "Bot"
-                : string.IsNullOrEmpty(clientInfo.Device.Family)
-                    ? "Unknown"
-                    : clientInfo.OS.Family;
-            
-            var log = new
-            {
-                timestamp = DateTime.UtcNow,
-                method = context.Request.Method,
-                path = context.Request.Path.ToString(),
-                statusCode = context.Response.StatusCode,
-                duration = stopwatch.ElapsedMilliseconds,
-                ip = context.Connection.RemoteIpAddress?.ToString(),
-                device = deviceType
-            };
+        stopwatch.Stop();
 
-            logger.LogInformation("{@RequestLog}", log);
-        }
+        var uaParser = Parser.GetDefault();
+        var clientInfo = uaParser.Parse(context.Request.Headers.UserAgent);
+        var deviceType = clientInfo.Device.IsSpider
+            ? "Bot"
+            : string.IsNullOrEmpty(clientInfo.Device.Family)
+                ? "Unknown"
+                : clientInfo.OS.Family;
+
+        var log = new
+        {
+            timestamp = DateTime.UtcNow,
+            method = context.Request.Method,
+            path = context.Request.Path.ToString(),
+            statusCode = context.Response.StatusCode,
+            duration = stopwatch.ElapsedMilliseconds,
+            ip = context.Connection.RemoteIpAddress?.ToString(),
+            device = deviceType
+        };
+
+        logger.LogInformation("{@RequestLog}", log);
     }
 }
