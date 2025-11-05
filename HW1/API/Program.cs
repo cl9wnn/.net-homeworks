@@ -1,4 +1,5 @@
 using API.Extensions;
+using API.Middlewares;
 using Application.Abstractions;
 using Core.Entities;
 using Infrastructure.Excel;
@@ -24,6 +25,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerDocumentation(builder.Environment);
     app.Services.ApplyMigrations();
 }
+
+app.UseMiddleware<RequestLoggingMiddleware>();
 
 app.MapControllers();
 
