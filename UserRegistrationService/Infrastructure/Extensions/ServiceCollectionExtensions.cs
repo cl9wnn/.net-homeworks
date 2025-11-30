@@ -1,4 +1,6 @@
+using Application.Abstractions;
 using Infrastructure.Database;
+using Infrastructure.Kafka;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,5 +17,12 @@ public static class ServiceCollectionExtensions
         });
 
         return services;
+    }
+    
+    public static void AddKafkaProducer<TMessage>(this IServiceCollection services,
+        IConfigurationSection configurationSection)
+    {
+        services.Configure<KafkaOptions>(configurationSection);
+        services.AddSingleton<IMessageProducer<TMessage>, KafkaProducer<TMessage>>();
     }
 }

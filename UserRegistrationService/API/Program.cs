@@ -1,5 +1,6 @@
 using API.Extensions;
 using API.Middlewares;
+using Core.Events;
 using Infrastructure.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,6 +11,7 @@ builder.Services.AddSwaggerDocumentation(builder.Environment);
 builder.Services.AddValidation();
 builder.Services.AddPostgreSqlDb(builder.Configuration);
 builder.Services.AddMappings();
+builder.Services.AddKafkaProducer<UserRegisteredEvent>(builder.Configuration.GetSection("Kafka:Users"));
 
 var app = builder.Build();
 

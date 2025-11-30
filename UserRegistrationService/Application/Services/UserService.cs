@@ -2,12 +2,14 @@ using Application.Abstractions;
 using Application.Dtos;
 using Core.Abstractions;
 using Core.Entities;
+using Core.Events;
 using MapsterMapper;
 using Microsoft.AspNetCore.Identity;
 
 namespace Application.Services;
 
-public class UserService(IUserRepository userRepository, IMapper mapper): IUserService
+public class UserService(IUserRepository userRepository, IMapper mapper, IMessageProducer<UserRegisteredEvent> producer)
+    : IUserService
 {
     public async Task<List<UserDto>> GetAllAsync()
     {
@@ -33,13 +35,19 @@ public class UserService(IUserRepository userRepository, IMapper mapper): IUserS
 
         if (existedUser != null)
             return null;
-        
+
         var hashedPassword = new PasswordHasher<UserDto>().HashPassword(null, dto.Password);
-        
+
         var user = mapper.Map<User>(dto);
         user.Password = hashedPassword;
-        
+
         var createdUser = await userRepository.AddAsync(user);
+
+        var userRegisteredEvent = new UserRegisteredEvent(createdUser.Id, createdUser.Username, createdUser.Email,
+            createdUser.CreatedDate);
+
+        await producer.ProduceAsync(userRegisteredEvent);
+
         return mapper.Map<UserDto?>(createdUser);
     }
 
