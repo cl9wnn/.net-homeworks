@@ -5,19 +5,19 @@ EXPOSE 8081
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
-WORKDIR /HW1
+WORKDIR /UserRegistrationService
 
 COPY API/API.csproj ./API/
 COPY Application/Application.csproj ./Application/
 COPY Core/Core.csproj ./Core/
 COPY Infrastructure/Infrastructure.csproj ./Infrastructure/
-COPY HW1.sln .
+COPY UserRegistrationService.sln .
 
-RUN dotnet restore HW1.sln
+RUN dotnet restore UserRegistrationService.sln
 
 COPY . .
 
-WORKDIR /HW1/API
+WORKDIR /UserRegistrationService/API
 RUN dotnet build -c $BUILD_CONFIGURATION -o /app/build
 
 

@@ -2,10 +2,10 @@ version: "3.9"
 
 services:
 
-  backend:
-    container_name: backend
+  user-registration-service:
+    container_name: user-registration-service
     build:
-      context: ./HW1
+      context: ./UserRegistrationService
       dockerfile: Dockerfile
     ports:
       - "5000:8080"
