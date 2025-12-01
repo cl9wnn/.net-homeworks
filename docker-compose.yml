@@ -18,6 +18,23 @@ services:
       - KAFKA__BOOTSTRAP_SERVERS=kafka:29092
       - ConnectionStrings__PostgreSqlDbConnection=Host=db;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
       - OpenSearch__Url=http://opensearch:9200
+
+  reporting-service:
+    container_name: reporting-service
+    build:
+      context: ./ReportingService
+      dockerfile: Dockerfile
+    ports:
+      - "5001:8080"
+    depends_on:
+      - db
+      - opensearch
+      - kafka
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - KAFKA__BOOTSTRAP_SERVERS=kafka:29092
+      - ConnectionStrings__PostgreSqlDbConnection=Host=db;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      - OpenSearch__Url=http://opensearch:9200
       
   db:
     container_name: postgres
