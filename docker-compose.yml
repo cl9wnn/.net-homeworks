@@ -10,13 +10,13 @@ services:
     ports:
       - "5000:8080"
     depends_on:
-      - db
+      - registration-db
       - opensearch
       - kafka
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - KAFKA__BOOTSTRAP_SERVERS=kafka:29092
-      - ConnectionStrings__PostgreSqlDbConnection=Host=db;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      - ConnectionStrings__PostgreSqlDbConnection=Host=registration-db;Port=5432;Database=${REG_DB};Username=${REG_USER};Password=${REG_PASSWORD}
       - OpenSearch__Url=http://opensearch:9200
 
   reporting-service:
@@ -27,26 +27,41 @@ services:
     ports:
       - "5001:8080"
     depends_on:
-      - db
+      - reporting-db
       - opensearch
       - kafka
+    volumes:
+      - "C:/user_report:/app/user_report"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - KAFKA__BOOTSTRAP_SERVERS=kafka:29092
-      - ConnectionStrings__PostgreSqlDbConnection=Host=db;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      - ConnectionStrings__PostgreSqlDbConnection=Host=reporting-db;Port=5432;Database=${REP_DB};Username=${REP_USER};Password=${REP_PASSWORD}
       - OpenSearch__Url=http://opensearch:9200
+    
       
-  db:
-    container_name: postgres
+  registration-db:
+    container_name: registration-db
     image: postgres:16
     ports:
       - "5433:5432"
     environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${REG_USER}
+      - POSTGRES_PASSWORD=${REG_PASSWORD}
+      - POSTGRES_DB=${REG_DB}
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - reg_pgdata:/var/lib/postgresql/data
+
+  reporting-db:
+    container_name: reporting-db
+    image: postgres:16
+    ports:
+      - "5434:5432"
+    environment:
+      - POSTGRES_USER=${REP_USER}
+      - POSTGRES_PASSWORD=${REP_PASSWORD}
+      - POSTGRES_DB=${REP_DB}
+    volumes:
+      - rep_pgdata:/var/lib/postgresql/data
 
   opensearch:
     container_name: opensearch
@@ -121,7 +136,8 @@ services:
       - SERVER_PORT=8080
       
 volumes:
-  pgdata:
+  reg_pgdata:
+  rep_pgdata:
   opensearch-data:
   kafka_data:
 
